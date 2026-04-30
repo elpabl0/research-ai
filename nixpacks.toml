@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs_22", "python3", "gcc", "gnumake"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build", "cp -r .next/static .next/standalone/.next/static", "cp -r public .next/standalone/public 2>/dev/null || true", "cp -r drizzle .next/standalone/drizzle"]

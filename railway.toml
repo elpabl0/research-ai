@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+nixpacksConfigPath = "nixpacks.toml"
+
+[deploy]
+startCommand = "HOSTNAME=0.0.0.0 node .next/standalone/server.js"
+healthcheckPath = "/login"
+healthcheckTimeout = 300

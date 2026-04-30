@@ -1,0 +1,26 @@
+# Vendor dependencies — large, not authored here
+node_modules/
+
+# Next.js build output — generated, not source
+.next/
+
+# Runtime database files — binary, not code
+data/
+
+# Lockfile — too large, not meaningful for coding context
+package-lock.json
+
+# Incremental TypeScript build cache — generated
+tsconfig.tsbuildinfo
+
+# Next.js auto-generated type declarations — not authored
+next-env.d.ts
+
+# Drizzle migration snapshots — generated JSON, not human-authored
+drizzle/migrations/meta/
+
+# Environment variables — may contain secrets
+.env
+
+# macOS metadata
+.DS_Store
