@@ -5,14 +5,17 @@ import * as schema from "./schema";
 import { existsSync, mkdirSync } from "fs";
 import { dirname, join } from "path";
 
-const dbPath =
-  process.env.DATABASE_PATH || join(process.cwd(), "data", "research-ai.db");
+type DrizzleDb = ReturnType<typeof drizzle<typeof schema>>;
 
 const globalForDb = globalThis as unknown as {
-  db: ReturnType<typeof drizzle<typeof schema>>;
+  db?: DrizzleDb;
 };
 
-if (!globalForDb.db) {
+function initDb(): DrizzleDb {
+  if (globalForDb.db) return globalForDb.db;
+
+  const dbPath =
+    process.env.DATABASE_PATH || join(process.cwd(), "data", "research-ai.db");
   const dir = dirname(dbPath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -22,15 +25,13 @@ if (!globalForDb.db) {
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");
 
-  const db = drizzle(sqlite, { schema });
+  const drizzleDb = drizzle(sqlite, { schema });
 
-  // Auto-run migrations to create/update tables
   const migrationsFolder = join(process.cwd(), "drizzle", "migrations");
   if (existsSync(migrationsFolder)) {
     try {
-      migrate(db, { migrationsFolder });
+      migrate(drizzleDb, { migrationsFolder });
     } catch (e: unknown) {
-      // If tables already exist (DB was created via drizzle-kit push), that's fine
       const msg = e instanceof Error
         ? (e.message + (e.cause instanceof Error ? " " + e.cause.message : ""))
         : String(e);
@@ -40,7 +41,15 @@ if (!globalForDb.db) {
     }
   }
 
-  globalForDb.db = db;
+  globalForDb.db = drizzleDb;
+  return drizzleDb;
 }
 
-export const db = globalForDb.db;
+// Lazy proxy: importing this module does NOT open SQLite. The DB handle is
+// created on first property access. This avoids `next build`'s page-data
+// collection workers racing to acquire the migration lock (SQLITE_BUSY).
+export const db = new Proxy({} as DrizzleDb, {
+  get(_target, prop, receiver) {
+    return Reflect.get(initDb() as object, prop, receiver);
+  },
+}) as DrizzleDb;
